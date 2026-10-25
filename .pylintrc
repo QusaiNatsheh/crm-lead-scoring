@@ -1,0 +1,10 @@
+[MASTER]
+load-plugins=pylint_odoo
+
+[ODOOLINT]
+valid-odoo-versions=20.0
+manifest-required-authors=Qusai Natsheh
+
+[MESSAGES CONTROL]
+disable=all
+enable=odoolint

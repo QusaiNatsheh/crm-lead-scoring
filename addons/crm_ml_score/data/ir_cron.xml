@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_ml_score" model="ir.cron">
+        <field name="name">CRM: refresh ML lead scores</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_ml_score()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+</odoo>

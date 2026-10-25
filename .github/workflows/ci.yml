@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pre-commit/action@v3.0.1
+
+  ml-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev,mlflow]"
+      - run: pytest -q
+        env:
+          MLFLOW_DISABLE_AGENT_HINT: "1"
+
+  odoo-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: odoo:20.0
+      options: --user root
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd "pg_isready -U odoo" --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install module and run tests
+        run: >
+          odoo --db_host=db --db_user=odoo --db_password=odoo -d test
+          --addons-path=$GITHUB_WORKSPACE/addons
+          -i crm_ml_score --test-tags /crm_ml_score
+          --stop-after-init --without-demo=all --log-level=test 2>&1 | tee odoo.log;
+          ! grep -E "(ERROR|CRITICAL) test " odoo.log;
+          grep -q "0 failed, 0 error(s)" odoo.log

@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+**/mlruns/
+/ml/data/
+.idea/
+.vscode/
+/ml/models/
+/ml/feedback/
+/ml/mlflow.db
+*.log
+/ml/build/

@@ -1,0 +1,56 @@
+# Host ports differ from the other portfolio projects so both stacks can run at once.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo"]
+      interval: 5s
+      retries: 10
+
+  ml:
+    build: ./ml
+    image: crm-score-ml:latest
+    ports:
+      - "8002:8000"
+    volumes:
+      - demo-data:/app/export  # the image's demo.json is copied into this volume on first start
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      retries: 10
+
+  mlflow:
+    pull_policy: never  # built locally by the ml service
+    image: crm-score-ml:latest  # same image, so MLflow shows the model being served
+    depends_on:
+      - ml
+    command: ["mlflow", "ui", "--backend-store-uri", "sqlite:////app/mlflow.db", "--host", "0.0.0.0", "--port", "5000"]
+    ports:
+      - "5002:5000"
+
+  odoo:
+    image: odoo:20.0
+    depends_on:
+      db:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
+    ports:
+      - "8071:8069"
+    volumes:
+      - ./addons:/mnt/extra-addons
+      - ./scripts:/mnt/scripts:ro
+      - ./config/odoo.conf:/etc/odoo/odoo.conf:ro
+      - demo-data:/mnt/data:ro
+      - odoo-data:/var/lib/odoo
+
+volumes:
+  db-data:
+  odoo-data:
+  demo-data:

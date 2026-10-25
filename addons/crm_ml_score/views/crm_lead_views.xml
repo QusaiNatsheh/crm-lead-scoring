@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crm_lead_view_form_ml" model="ir.ui.view">
+        <field name="name">crm.lead.form.ml_score</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="ml_score" string="ML Score" invisible="type != 'opportunity'">
+                    <group>
+                        <group string="Prediction">
+                            <field name="ml_probability" widget="progressbar"/>
+                            <field name="ml_band" widget="badge" decoration-success="ml_band == 'hot'"
+                                   decoration-warning="ml_band == 'warm'" decoration-muted="ml_band == 'cold'"/>
+                            <field name="probability" string="Odoo Probability" widget="progressbar"/>
+                            <field name="ml_scored_on"/>
+                            <field name="ml_model_version" groups="base.group_no_one"/>
+                        </group>
+                        <group string="Lead Profile">
+                            <field name="ml_industry"/>
+                            <field name="ml_company_size"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Raises the score">
+                            <field name="ml_raises" nolabel="1" colspan="2"/>
+                        </group>
+                        <group string="Lowers the score">
+                            <field name="ml_lowers" nolabel="1" colspan="2"/>
+                        </group>
+                    </group>
+                    <button name="action_ml_score" type="object" string="Score Now" class="btn-secondary"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_kanban_ml" model="ir.ui.view">
+        <field name="name">crm.lead.kanban.ml_score</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='priority']" position="after">
+                <field name="ml_band" invisible="not ml_band" widget="badge"
+                       decoration-success="ml_band == 'hot'" decoration-warning="ml_band == 'warm'"
+                       decoration-muted="ml_band == 'cold'" class="me-1"/>
+                <field name="ml_probability" invisible="not ml_band" widget="integer" class="me-2 text-muted small"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_list_ml" model="ir.ui.view">
+        <field name="name">crm.lead.list.ml_score</field>
+        <field name="model">crm.lead</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list create="0">
+                <header>
+                    <button name="action_ml_score_all" type="object" string="Score All Open" class="btn-primary"
+                            display="always"/>
+                </header>
+                <field name="name"/>
+                <field name="partner_id" optional="show"/>
+                <field name="user_id" optional="show"/>
+                <field name="stage_id"/>
+                <field name="company_currency" column_invisible="1"/>
+                <field name="expected_revenue" sum="Total"/>
+                <field name="ml_probability" widget="progressbar"/>
+                <field name="probability" string="Odoo %" widget="progressbar" optional="show"/>
+                <field name="ml_band" widget="badge" decoration-success="ml_band == 'hot'"
+                       decoration-warning="ml_band == 'warm'" decoration-muted="ml_band == 'cold'"/>
+                <field name="ml_raises" optional="hide"/>
+                <field name="ml_lowers" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_pivot_ml" model="ir.ui.view">
+        <field name="name">crm.lead.pivot.ml_score</field>
+        <field name="model">crm.lead</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <pivot string="Lead Scores">
+                <field name="ml_band" type="row"/>
+                <field name="stage_id" type="col"/>
+                <field name="expected_revenue" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_graph_ml" model="ir.ui.view">
+        <field name="name">crm.lead.graph.ml_score</field>
+        <field name="model">crm.lead</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <graph string="Pipeline by ML Score" type="bar" stacked="1">
+                <field name="stage_id"/>
+                <field name="ml_band"/>
+                <field name="expected_revenue" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_crm_ml_score" model="ir.actions.act_window">
+        <field name="name">Lead Scores</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">list,graph,pivot,form</field>
+        <field name="domain">[('type', '=', 'opportunity'), ('stage_id.is_won', '=', False)]</field>
+        <field name="context">{'list_view_ref': 'crm_ml_score.crm_lead_view_list_ml',
+                               'graph_view_ref': 'crm_ml_score.crm_lead_view_graph_ml',
+                               'pivot_view_ref': 'crm_ml_score.crm_lead_view_pivot_ml'}</field>
+    </record>
+
+    <menuitem id="menu_crm_ml_score" name="Lead Scores" parent="crm.crm_menu_report"
+              action="action_crm_ml_score" sequence="50"/>
+</odoo>
